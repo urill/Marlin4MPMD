@@ -87,7 +87,7 @@
 // User-specified version info of this build to display in [Pronterface, etc] terminal window during
 // startup. Implementation of an idea by Prof Braino to inform user that any changes made to this
 // build by the user have been successfully uploaded into firmware.
-#define STRING_CONFIG_H_AUTHOR "(MCheah)" // Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "(Keshuai)" // Who made the changes.
 #define SHOW_BOOTSCREEN
 #define STRING_SPLASH_LINE1 SHORT_BUILD_VERSION // will be shown during bootup in line 1
 #define STRING_SPLASH_LINE2 WEBSITE_URL         // will be shown during bootup in line 2
@@ -224,15 +224,15 @@
 // 110 is Pt100 with 1k pullup (non standard)
 // 998 and 999 are Dummy Tables. They will ALWAYS read 25°C or the temperature defined below.
 //     Use it for Testing or Development purposes. NEVER for production machine.
-//#define DUMMY_THERMISTOR_998_VALUE 25
+#define DUMMY_THERMISTOR_998_VALUE 25
 //#define DUMMY_THERMISTOR_999_VALUE 100
 // :{ '0': "Not used",'1':"100k / 4.7k - EPCOS",'2':"200k / 4.7k - ATC Semitec 204GT-2",'3':"Mendel-parts / 4.7k",'4':"10k !! do not use for a hotend. Bad resolution at high temp. !!",'5':"100K / 4.7k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)",'6':"100k / 4.7k EPCOS - Not as accurate as Table 1",'7':"100k / 4.7k Honeywell 135-104LAG-J01",'8':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT",'9':"100k / 4.7k GE Sensing AL03006-58.2K-97-G1",'10':"100k / 4.7k RS 198-961",'11':"100k / 4.7k beta 3950 1%",'12':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT (calibrated for Makibox hot bed)",'13':"100k Hisens 3950  1% up to 300°C for hotend 'Simple ONE ' & hotend 'All In ONE'",'20':"PT100 (Ultimainboard V2.x)",'51':"100k / 1k - EPCOS",'52':"200k / 1k - ATC Semitec 204GT-2",'55':"100k / 1k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)",'60':"100k Maker's Tool Works Kapton Bed Thermistor beta=3950",'66':"Dyze Design 4.7M High Temperature thermistor",'70':"the 100K thermistor found in the bq Hephestos 2",'71':"100k / 4.7k Honeywell 135-104LAF-J01",'147':"Pt100 / 4.7k",'1047':"Pt1000 / 4.7k",'110':"Pt100 / 1k (non-standard)",'1010':"Pt1000 / 1k (non standard)",'-3':"Thermocouple + MAX31855 (only for sensor 0)",'-2':"Thermocouple + MAX6675 (only for sensor 0)",'-1':"Thermocouple + AD595",'998':"Dummy 1",'999':"Dummy 2" }
 //TODO: verify these temp sensor values vs the mpmd
-#define TEMP_SENSOR_0 73
+#define TEMP_SENSOR_0 998
 //#define TEMP_SENSOR_1 0
 //#define TEMP_SENSOR_2 0
 //#define TEMP_SENSOR_3 0
-#define TEMP_SENSOR_BED 73
+#define TEMP_SENSOR_BED 998
 
 
 // This makes temp sensor 1 a redundant sensor for sensor 0. If the temperatures difference between these sensors is to high the print will be aborted.
@@ -252,20 +252,20 @@
 // The minimal temperature defines the temperature below which the heater will not be enabled It is used
 // to check that the wiring to the thermistor is not broken.
 // Otherwise this would lead to the heater being powered on all the time.
-#define HEATER_0_MINTEMP 5
+//#define HEATER_0_MINTEMP 5
 //#define HEATER_1_MINTEMP 5
 //#define HEATER_2_MINTEMP 5
 //#define HEATER_3_MINTEMP 5
-#define BED_MINTEMP 5
+//#define BED_MINTEMP 5
 
 // When temperature exceeds max temp, your heater will be switched off.
 // This feature exists to protect your hotend from overheating accidentally, but *NOT* from thermistor short/failure!
 // You should use MINTEMP for thermistor short/failure protection.
-#define HEATER_0_MAXTEMP 275
+//#define HEATER_0_MAXTEMP 9999
 //#define HEATER_1_MAXTEMP 275
 //#define HEATER_2_MAXTEMP 275
 //#define HEATER_3_MAXTEMP 275
-#define BED_MAXTEMP 90
+//#define BED_MAXTEMP 9999
 
 //===========================================================================
 //============================= PID Settings ================================
@@ -274,9 +274,9 @@
 
 // Comment the following line to disable PID and enable bang-bang.
 //TODO: re-enable PID temp control
-#define PIDTEMP
+//#define PIDTEMP
 #define BANG_MAX 255 // limits current to nozzle while in bang-bang mode; 255=full current
-#define PID_MAX BANG_MAX // limits current to nozzle while PID is active (see PID_FUNCTIONAL_RANGE below); 255=full current
+#define PID_MAX BANG_MAX// limits current to nozzle while PID is active (see PID_FUNCTIONAL_RANGE below); 255=full current
 #if ENABLED(PIDTEMP)
   //#define PID_AUTOTUNE_MENU // Add PID Autotune to the LCD "Temperature" menu to run M303 and apply the result.
   //#define PID_DEBUG // Sends debug data to the serial port.
@@ -325,7 +325,7 @@
 // If your configuration is significantly different than this and you don't understand the issues involved, you probably
 // shouldn't use bed PID until someone else verifies your hardware works.
 // If this is enabled, find your own PID constants below.
-#define PIDTEMPBED
+//#define PIDTEMPBED
 
 //#define BED_LIMIT_SWITCHING
 
@@ -423,7 +423,7 @@
   // NOTE NB all values for DELTA_* values MUST be floating point, so always have a decimal point in them
 
   // Center-to-center distance of the holes in the diagonal push rods.
-  #define DELTA_DIAGONAL_ROD 120.8 // mm
+  #define DELTA_DIAGONAL_ROD 120.0 // mm
 
   // Horizontal offset from middle of printer to smooth rod center.
 //  #define DELTA_SMOOTH_ROD_OFFSET 108 // mm
@@ -441,8 +441,8 @@
 	#define DELTA_RADIUS 63.00
 
 	#define DELTA_ENDSTOP_ADJ_X 0.0
-	#define DELTA_ENDSTOP_ADJ_Y 0.0
-	#define DELTA_ENDSTOP_ADJ_Z 0.0
+	#define DELTA_ENDSTOP_ADJ_Y -0.09
+	#define DELTA_ENDSTOP_ADJ_Z -0.48
 
   // Trim adjustments for individual towers
   // tower angle corrections for X and Y tower / rotate XYZ so Z tower angle = 0
@@ -654,9 +654,9 @@
 
 // Invert the stepper direction. Change (or reverse the motor connector) if an axis goes the wrong way.
 // For Bicephale
-#define INVERT_X_DIR false
-#define INVERT_Y_DIR false
-#define INVERT_Z_DIR false
+#define INVERT_X_DIR true
+#define INVERT_Y_DIR true
+#define INVERT_Z_DIR true
 //#define INVERT_X_DIR false
 //#define INVERT_Y_DIR true
 //#define INVERT_Z_DIR false
@@ -671,7 +671,7 @@
 
 // @section homing
 
-#define MIN_Z_HEIGHT_FOR_HOMING 10 // (in mm) Minimal z height before homing (G28) for Z clearance above the bed, clamps, ...
+#define MIN_Z_HEIGHT_FOR_HOMING 0 // (in mm) Minimal z height before homing (G28) for Z clearance above the bed, clamps, ...
                                     // Be sure you have this distance over your Z_MAX_POS in case.
 
 // ENDSTOP SETTINGS:
@@ -689,10 +689,10 @@
 // Travel limits after homing (units are in mm)
 #define X_MIN_POS -60
 #define Y_MIN_POS -60
-#define Z_MIN_POS 0
+#define Z_MIN_POS -300
 #define X_MAX_POS 60
 #define Y_MAX_POS 60 //200
-#define Z_MAX_POS 125 //200
+#define Z_MAX_POS 300 //200
 
 //#define MAX_RAD (sqrt(sq(X_MAX_POS)+sq(Y_MAX_POS))))
 #define MAX_RAD 60
@@ -737,9 +737,9 @@
 
 // @section bedlevel
 //TODO: re-enable later
-#if DISABLED(MINIMAL_BUILD)
+//#if DISABLED(MINIMAL_BUILD)
 #define AUTO_BED_LEVELING_FEATURE // Delete the comment to enable (remove // at the start of the line)
-#endif
+//#endif
 // Enable this feature to get detailed logging of G28, G29, M48, etc.
 // Logging is off by default. Enable this logging feature with 'M111 S32'.
 // NOTE: Requires a huge amount of PROGMEM.
@@ -816,7 +816,7 @@
 // For DELTA this is the top-center of the Cartesian print volume.
 //#define MANUAL_X_HOME_POS 0
 //#define MANUAL_Y_HOME_POS 0
-#define MANUAL_Z_HOME_POS 125 // Distance between the nozzle to printbed after homing
+#define MANUAL_Z_HOME_POS 0 // Distance between the nozzle to printbed after homing
 
 // Use "Z Safe Homing" to avoid homing with a Z probe outside the bed area.
 //
@@ -838,7 +838,7 @@
 #ifndef DELTA
 #define HOMING_FEEDRATE_XY (50*60)
 #endif
-  #define HOMING_FEEDRATE_Z  (50*60)
+  #define HOMING_FEEDRATE_Z  (150*60)
 
 //
 // MOVEMENT SETTINGS
@@ -854,9 +854,9 @@
 #define MOTOR_DEFAULT_STEPS_PER_UNIT  (MOTOR_STEPS_PER_REVOLUTION * MOTOR_MICROSTEPS_COUNT / MOTOR_PULLEY_TEETH_COUNT / MOTOR_BELT_PITCH_MM)
 #define MOTOR_EXTRUDER_RADIUS		  5.5
 #define MOTOR_DEFAULT_EXTRUDER_STEPS_PER_UNIT	(MOTOR_STEPS_PER_REVOLUTION *MOTOR_MICROSTEPS_COUNT / (2*pi*MOTOR_EXTRUDER_RADIUS)
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {MOTOR_DEFAULT_STEPS_PER_UNIT,MOTOR_DEFAULT_STEPS_PER_UNIT,MOTOR_DEFAULT_STEPS_PER_UNIT,48.50}  // default steps per unit for Ultimaker
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {112.9, 112.9, 112.9, 97.00}  // default steps per unit for Ultimaker
 #define DEFAULT_MAX_FEEDRATE          {150, 150, 150, 50}    // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {800,800,800,10000}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for Skeinforge 40+, for older versions raise them a lot.
+#define DEFAULT_MAX_ACCELERATION      {3000,3000,3000,10000}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for Skeinforge 40+, for older versions raise them a lot.
 
 #define DEFAULT_ACCELERATION          3000    // X, Y, Z and E acceleration in mm/s^2 for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000    // E acceleration in mm/s^2 for retracts
