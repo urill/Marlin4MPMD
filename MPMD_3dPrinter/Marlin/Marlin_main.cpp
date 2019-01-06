@@ -474,16 +474,20 @@ static uint8_t target_extruder;
   // these are the default values, can be overriden with M665
   float delta_height = Z_HOME_POS;
   float delta_radius = DELTA_RADIUS;
-  float delta_tower1_x = -SIN_60 * (delta_radius + DELTA_RADIUS_TRIM_TOWER_1); // front left tower
-  float delta_tower1_y = -COS_60 * (delta_radius + DELTA_RADIUS_TRIM_TOWER_1);
-  float delta_tower2_x =  SIN_60 * (delta_radius + DELTA_RADIUS_TRIM_TOWER_2); // front right tower
-  float delta_tower2_y = -COS_60 * (delta_radius + DELTA_RADIUS_TRIM_TOWER_2);
-  float delta_tower3_x = 0;                                                    // back middle tower
-  float delta_tower3_y = (delta_radius + DELTA_RADIUS_TRIM_TOWER_3);
+  float delta_radius_trim_tower_1 = DELTA_RADIUS_TRIM_TOWER_1;
+  float delta_radius_trim_tower_2 = DELTA_RADIUS_TRIM_TOWER_2;
+  float delta_radius_trim_tower_3 = DELTA_RADIUS_TRIM_TOWER_3;
+  float delta_tower1_x = cos(RADIANS(210 + delta_tower_angle_trim[A_AXIS])) * (delta_radius + delta_radius_trim_tower_1); // front left tower
+  float delta_tower1_y = sin(RADIANS(210 + delta_tower_angle_trim[A_AXIS])) * (delta_radius + delta_radius_trim_tower_1);
+  float delta_tower2_x = cos(RADIANS(330 + delta_tower_angle_trim[B_AXIS])) * (delta_radius + delta_radius_trim_tower_2); // front right tower
+  float delta_tower2_y = sin(RADIANS(330 + delta_tower_angle_trim[B_AXIS])) * (delta_radius + delta_radius_trim_tower_2);
+  float delta_tower3_x = cos(RADIANS( 90 + delta_tower_angle_trim[C_AXIS])) * (delta_radius + delta_radius_trim_tower_3); // back middle tower
+  float delta_tower3_y = sin(RADIANS( 90 + delta_tower_angle_trim[C_AXIS])) * (delta_radius + delta_radius_trim_tower_3);
   float delta_diagonal_rod = DELTA_DIAGONAL_ROD;
   float delta_diagonal_rod_trim_tower_1 = DELTA_DIAGONAL_ROD_TRIM_TOWER_1;
   float delta_diagonal_rod_trim_tower_2 = DELTA_DIAGONAL_ROD_TRIM_TOWER_2;
   float delta_diagonal_rod_trim_tower_3 = DELTA_DIAGONAL_ROD_TRIM_TOWER_3;
+
   float delta_diagonal_rod_2_tower_1 = sq(delta_diagonal_rod + delta_diagonal_rod_trim_tower_1);
   float delta_diagonal_rod_2_tower_2 = sq(delta_diagonal_rod + delta_diagonal_rod_trim_tower_2);
   float delta_diagonal_rod_2_tower_3 = sq(delta_diagonal_rod + delta_diagonal_rod_trim_tower_3);
@@ -574,6 +578,7 @@ void get_available_commands();
 void process_next_command();
 void prepare_move_to_destination();
 void set_current_from_steppers_for_axis(AxisEnum axis);
+void gcode_G28();
 
 #if ENABLED(ARC_SUPPORT)
   void plan_arc(float target[NUM_AXIS], float* offset, uint8_t clockwise);
@@ -784,24 +789,6 @@ void setup_powerhold() {
     BSP_MiscStopInit(2);
     BSP_MiscStopInit(5);
 
-#if defined(U_MIN_PIN) && U_MIN_PIN > -1
-    BSP_MiscStopInit(3);
-#endif
-#if defined(V_MIN_PIN) && V_MIN_PIN > -1
-    BSP_MiscStopInit(4);
-#endif
-#if defined(W_MIN_PIN) && W_MIN_PIN > -1
-    BSP_MiscStopInit(5);
-#endif
-
-#if !defined(NO_WIFI)
-    //--- Wifi init
-#if defined(PROD_TEST)
-    BSP_WifiHwInit(BAUDRATE,WIFI_SSID,WIFI_WEP_KEY,WIFI_FW_VERSION,WIFI_FS_VERSION);
-#else
-    BSP_WifiHwInit(BAUDRATE,WIFI_SSID,WIFI_WEP_KEY);
-#endif
-#endif //#if !defined(NO_WIFI)
 
     //Extruder 0 Fan init
     BSP_MiscFanInit(0);
@@ -816,7 +803,11 @@ void setup_sdcard()
 #if defined(SDSUPPORT)
   while (p_card->autostart_atmillis>millis()) { }
   if(FATFS_LinkDriver(&SD_Driver, SDPath) == 0)
+  {
 	  p_card->checkautostart(true);
+  	  if(p_card->cardOK)
+		Config_RetrieveSettings();
+  }
 #endif
 }
 
@@ -944,11 +935,6 @@ void setup() {
   // Reset parameters to default values
   Config_ResetDefault();
 
-  // Init and autostart on SD card
-#if defined(SDSUPPORT)
-  setup_sdcard();
-#endif
-
   // Load data from EEPROM if available (or use defaults)
   // This also updates variables in the planner, elsewhere
 //  Config_RetrieveSettings();
@@ -1001,8 +987,9 @@ void setup() {
     pinMode(STAT_LED_BLUE, OUTPUT);
     digitalWrite(STAT_LED_BLUE, LOW); // turn it off
   #endif
-
+  delay(1000); //Give USB time to connect and initialize before starting LCD interface
   lcd_init();
+
   #if ENABLED(SHOW_BOOTSCREEN)
     #if ENABLED(DOGLCD)
       safe_delay(BOOTSCREEN_TIMEOUT);
@@ -1027,6 +1014,10 @@ void setup() {
     if(thermalManager.current_temperature[0]>140)    {
     	enqueue_and_echo_commands_P(PSTR("G28\nM106 S255"));
     }
+    // Init and autostart on SD card
+  #if defined(SDSUPPORT)
+    setup_sdcard();
+  #endif
 }
 
 /**
@@ -2398,6 +2389,23 @@ static void clean_up_after_endstop_or_probe_move() {
     }
 
     /**
+     * Zero's out points outside the probeable area of the print surface
+     * so that they can be effectively extrapolated
+     */
+    static void clear_extrapolated_bed_level() {
+    const int HALF_AUTO_BED_LEVELING_GRID_POINTS = (AUTO_BED_LEVELING_GRID_POINTS-1)/2;
+    for(int i=0;i<AUTO_BED_LEVELING_GRID_POINTS;i++) {
+			float xsq = sq(i-HALF_AUTO_BED_LEVELING_GRID_POINTS)/HALF_AUTO_BED_LEVELING_GRID_POINTS;
+    		for(int j=0;j<=AUTO_BED_LEVELING_GRID_POINTS;j++) {
+    			float ysq = (j-HALF_AUTO_BED_LEVELING_GRID_POINTS)/HALF_AUTO_BED_LEVELING_GRID_POINTS;
+    			float rad;
+    			arm_sqrt_f32(xsq+ysq,&rad);
+    			if(rad>1.0)
+    				bed_level[i][j] = 0;
+    		}
+    	}
+    }
+    /**
      * Fill in the unprobed points (corners of circular print surface)
      * using linear extrapolation, away from the center.
      */
@@ -2445,6 +2453,47 @@ static void clean_up_after_endstop_or_probe_move() {
         }
       }
     }
+
+    static float probe_delta_height(float probe_offset, bool stow=true, int verbose=3) {
+    	float z_at_pt;
+		SERIAL_PROTOCOLPGM("Probing Delta Height");
+    	for(int i=0;i<2;i++) { //iterate up to 2 times in case the wrong steps per mm detected
+			delta_height = Z_HOME_POS; //set default home position
+			gcode_G28();
+			z_at_pt = probe_pt(0,0,stow,verbose) + probe_offset;
+			if(z_at_pt <= MIN_Z_HEIGHT_ERROR) //If we are this far off, then steps/mm is too small, try 2x
+			{
+				LOOP_XYZE(axis) {
+					planner.axis_steps_per_mm[axis]*=2;
+				}
+				planner.refresh_positioning();
+				SERIAL_PROTOCOLPGM("Delta height too large, trying 2x M92 value\n");
+				SERIAL_ECHOPAIR(" New M92 X", planner.axis_steps_per_mm[X_AXIS]);
+				SERIAL_ECHOPAIR(" Y", planner.axis_steps_per_mm[Y_AXIS]);
+				SERIAL_ECHOPAIR(" Z", planner.axis_steps_per_mm[Z_AXIS]);
+				SERIAL_ECHOPAIR(" E", planner.axis_steps_per_mm[E_AXIS]);
+			}
+			else if(z_at_pt >= MAX_Z_HEIGHT_ERROR) //If we are this far off, then steps/mm is too big, try 1/2
+			{
+				LOOP_XYZE(axis) {
+					planner.axis_steps_per_mm[axis]/=2;
+				}
+				planner.refresh_positioning();
+				SERIAL_PROTOCOLPGM("Delta height too small, trying 1/2 M92 value\n");
+				SERIAL_ECHOPAIR(" New M92 X", planner.axis_steps_per_mm[X_AXIS]);
+				SERIAL_ECHOPAIR(" Y", planner.axis_steps_per_mm[Y_AXIS]);
+				SERIAL_ECHOPAIR(" Z", planner.axis_steps_per_mm[Z_AXIS]);
+				SERIAL_ECHOPAIR(" E", planner.axis_steps_per_mm[E_AXIS]);
+			}
+			else //within range
+				break;
+    	}
+    	delta_height -= z_at_pt;
+    	current_position[Z_AXIS] -= z_at_pt;
+        SYNC_PLAN_POSITION_KINEMATIC();
+    	return z_at_pt;
+    }
+
 
   #endif // DELTA
 
@@ -3009,7 +3058,7 @@ inline void gcode_G28() {
     /**
      * A delta can only safely home all axes at the same time
      */
-
+    bool safeHome = (current_position[Z_AXIS] <= delta_clip_start_height);
     // Pretend the current position is 0,0,0
     // This is like quick_home_xy() but for 3 towers.
     current_position[X_AXIS] = current_position[Y_AXIS] = current_position[Z_AXIS] = 0.0;
@@ -3267,7 +3316,8 @@ inline void gcode_G28() {
 
   #if ENABLED(DELTA)
     // move to a height where we can use the full xy-area
-    do_blocking_move_to_z(delta_clip_start_height);
+    if(safeHome)
+    	do_blocking_move_to_z(delta_clip_start_height);
   #endif
 
   clean_up_after_endstop_or_probe_move();
@@ -3533,7 +3583,13 @@ inline void gcode_G28() {
 
     // Don't allow auto-leveling without homing first
     if (axis_unhomed_error(true, true, true)) return;
-
+    int probe_level = code_seen('P') ? code_value_int() : 2;
+    if (probe_level < 0 || probe_level > 2) {
+      SERIAL_ECHOLNPGM("?(P)robe Level is implausible (0-2).");
+      return;
+    }
+    bool do_height_probe = !(probe_level & 0x01); //!LSB means do probe height
+    bool do_mesh_probe = probe_level!=0; //Do mesh probe if non-zero
     int verbose_level = code_seen('V') ? code_value_int() : 1;
     if (verbose_level < 0 || verbose_level > 4) {
       SERIAL_ECHOLNPGM("?(V)erbose Level is implausible (0-4).");
@@ -3542,13 +3598,22 @@ inline void gcode_G28() {
 
     bool dryrun = code_seen('D');
     bool stow_probe_after_each = code_seen('E');
+    float zoffset = 0;
+    if (code_seen('Z')) zoffset += code_value_axis_units(Z_AXIS);
 
     #if ENABLED(AUTO_BED_LEVELING_GRID)
+
+    if(do_height_probe)
+    {
+    	float delta_z_offset = probe_delta_height(zoffset);
+    	if(delta_z_offset<=MIN_Z_HEIGHT_ERROR || delta_z_offset>=MAX_Z_HEIGHT_ERROR )
+			SERIAL_PROTOCOLPGM("Delta Height is misconfigured, aborting Auto Bed Leveling");
+    }
 
       #if DISABLED(DELTA)
         bool do_topography_map = verbose_level > 2 || code_seen('T');
       #endif
-
+      if (do_mesh_probe) {
       if (verbose_level > 0) {
         SERIAL_PROTOCOLLNPGM("G29 Auto Bed Leveling");
         if (dryrun) SERIAL_PROTOCOLLNPGM("Running in DRY-RUN mode");
@@ -3654,8 +3719,6 @@ inline void gcode_G28() {
       #if ENABLED(DELTA)
         delta_grid_spacing[0] = xGridSpacing;
         delta_grid_spacing[1] = yGridSpacing;
-        float zoffset = 0;
-        if (code_seen('Z')) zoffset += code_value_axis_units(Z_AXIS);
       #else // !DELTA
         /**
          * solve the plane equation ax + by + d = z
@@ -3760,6 +3823,7 @@ inline void gcode_G28() {
       #if ENABLED(DELTA)
 
         if (!dryrun) extrapolate_unprobed_bed_level();
+      }
         print_bed_level();
 
       #else // !DELTA
@@ -4069,8 +4133,6 @@ inline void gcode_M17() {
    * M21: Init SD Card
    */
   inline void gcode_M21() {
-    //TODO: there's a bug related to re-initializing the SD card, currently it only works
-    //the first time on powerup, so we disable this command for now
     p_card->initsd();
   }
 
@@ -5587,6 +5649,9 @@ inline void gcode_M206() {
     if (code_seen('A')) delta_diagonal_rod_trim_tower_1 = code_value_linear_units();
     if (code_seen('B')) delta_diagonal_rod_trim_tower_2 = code_value_linear_units();
     if (code_seen('C')) delta_diagonal_rod_trim_tower_3 = code_value_linear_units();
+    if (code_seen('D')) delta_radius_trim_tower_1 = code_value_linear_units();
+    if (code_seen('E')) delta_radius_trim_tower_2 = code_value_linear_units();
+    if (code_seen('F')) delta_radius_trim_tower_3 = code_value_linear_units();
     if (code_seen('X')) delta_tower_angle_trim[A_AXIS] = code_value_float();
     if (code_seen('Y')) delta_tower_angle_trim[B_AXIS] = code_value_float();
     if (code_seen('Z')) delta_tower_angle_trim[C_AXIS] = code_value_float();
@@ -6260,7 +6325,10 @@ void quickstop_stepper() {
     	if(hasC)
     		reset_bed_level();
     	else if(hasE)//Re-calculate the 0'ed points, must be done manually
+    	{
+    		clear_extrapolated_bed_level();
     		extrapolate_unprobed_bed_level(); 	
+    	}
 		//TODO: make it so that the extrapolated points are automatically cleared			
     	print_bed_level();//Print entire map
     }
@@ -7935,12 +8003,12 @@ void clamp_to_software_endstops(float target[3]) {
 #if ENABLED(DELTA)
 
   void recalc_delta_settings(float radius, float diagonal_rod) {
-	delta_tower1_x = cos(RADIANS(210 + delta_tower_angle_trim[A_AXIS])) * (radius + DELTA_RADIUS_TRIM_TOWER_1); // front left tower
-	delta_tower1_y = sin(RADIANS(210 + delta_tower_angle_trim[A_AXIS])) * (radius + DELTA_RADIUS_TRIM_TOWER_1);
-	delta_tower2_x = cos(RADIANS(330 + delta_tower_angle_trim[B_AXIS])) * (radius + DELTA_RADIUS_TRIM_TOWER_2); // front right tower
-	delta_tower2_y = sin(RADIANS(330 + delta_tower_angle_trim[B_AXIS])) * (radius + DELTA_RADIUS_TRIM_TOWER_2);
-	delta_tower3_x = cos(RADIANS( 90 + delta_tower_angle_trim[C_AXIS])) * (radius + DELTA_RADIUS_TRIM_TOWER_3); // back middle tower
-	delta_tower3_y = sin(RADIANS( 90 + delta_tower_angle_trim[C_AXIS])) * (radius + DELTA_RADIUS_TRIM_TOWER_3);
+	delta_tower1_x = cos(RADIANS(210 + delta_tower_angle_trim[A_AXIS])) * (radius + delta_radius_trim_tower_1); // front left tower
+	delta_tower1_y = sin(RADIANS(210 + delta_tower_angle_trim[A_AXIS])) * (radius + delta_radius_trim_tower_1);
+	delta_tower2_x = cos(RADIANS(330 + delta_tower_angle_trim[B_AXIS])) * (radius + delta_radius_trim_tower_2); // front right tower
+	delta_tower2_y = sin(RADIANS(330 + delta_tower_angle_trim[B_AXIS])) * (radius + delta_radius_trim_tower_2);
+	delta_tower3_x = cos(RADIANS( 90 + delta_tower_angle_trim[C_AXIS])) * (radius + delta_radius_trim_tower_3); // back middle tower
+	delta_tower3_y = sin(RADIANS( 90 + delta_tower_angle_trim[C_AXIS])) * (radius + delta_radius_trim_tower_3);
     delta_diagonal_rod_2_tower_1 = sq(diagonal_rod + delta_diagonal_rod_trim_tower_1);
     delta_diagonal_rod_2_tower_2 = sq(diagonal_rod + delta_diagonal_rod_trim_tower_2);
     delta_diagonal_rod_2_tower_3 = sq(diagonal_rod + delta_diagonal_rod_trim_tower_3);

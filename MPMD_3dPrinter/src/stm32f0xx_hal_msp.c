@@ -854,6 +854,23 @@ void HAL_TIM_OC_MspDeInit(TIM_HandleTypeDef* htim_oc)
 #endif//MARLIN
 }
 
+/**
+  * @brief External Line Callback
+  * @param[in] GPIO_Pin pin number
+  * @retval None
+  */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (GPIO_Pin == BSP_STOP_W_PIN)
+	{
+		if(HAL_GPIO_ReadPin(BSP_STOP_W_PORT,BSP_STOP_W_PIN)==GPIO_PIN_RESET)
+			BSP_LED_On(LED_RED);
+		else
+			BSP_LED_Off(LED_RED);
+	}
+ }
+
+
 void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 {
 
@@ -901,10 +918,6 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     HAL_GPIO_Init(BSP_THERM_E3_PORT, &GPIO_InitStruct);
 #endif//BSP_THERM_E2_PIN
     
-    GPIO_InitStruct.Pin = BSP_IR_OUT_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(BSP_IR_OUT_PORT, &GPIO_InitStruct);    
 
     /* Peripheral DMA init*/
     pDmaHandle->Instance = BSP_DMA;
@@ -956,7 +969,6 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     HAL_GPIO_DeInit(BSP_THERM_E2_PORT, BSP_THERM_E2_PIN);
     HAL_GPIO_DeInit(BSP_THERM_E3_PORT, BSP_THERM_E3_PIN);
 #endif//BSP_THERM_E2_PIN
-    HAL_GPIO_DeInit(BSP_IR_OUT_PORT, BSP_IR_OUT_PIN);
     
     /* Peripheral DMA DeInit*/
     if(hadc->DMA_Handle != NULL)

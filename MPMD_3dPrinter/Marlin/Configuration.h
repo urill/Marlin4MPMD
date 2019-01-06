@@ -334,7 +334,6 @@
 // setting this to anything other than 255 enables a form of PWM to the bed just like HEATER_BED_DUTY_CYCLE_DIVIDER did,
 // so you shouldn't use it unless you are OK with PWM on your bed.  (see the comment on enabling PIDTEMPBED)
 #define MAX_BED_POWER 255 // limits duty cycle to bed; 255=full current
-#define HEATER_BED_5A_LIMIT
 #if ENABLED(PIDTEMPBED)
 
   //#define PID_BED_DEBUG // Sends debug data to the serial port.
@@ -818,6 +817,9 @@
 //#define MANUAL_Y_HOME_POS 0
 #define MANUAL_Z_HOME_POS 0 // Distance between the nozzle to printbed after homing
 
+#define MAX_Z_HEIGHT_ERROR 40
+#define MIN_Z_HEIGHT_ERROR -60
+
 // Use "Z Safe Homing" to avoid homing with a Z probe outside the bed area.
 //
 // With this feature enabled:
@@ -1096,6 +1098,7 @@
 #if ENABLED(SDSUPPORT)
   #define SD_SETTINGS
   #define CONFIG_FILE_NAME "m_cfg.g"
+  #define UPPER_CONFIG_FILE_NAME "M_CFG.G"
 #endif
 //
 // SD CARD: SPI SPEED
