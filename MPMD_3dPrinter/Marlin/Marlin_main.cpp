@@ -787,7 +787,18 @@ void setup_powerhold() {
     BSP_MiscStopInit(0);
     BSP_MiscStopInit(1);
     BSP_MiscStopInit(2);
-    BSP_MiscStopInit(5);
+//    BSP_MiscStopInit(5);
+
+    GPIO_InitTypeDef  GPIO_InitStruct;
+
+    /* Configure the GPIO_LED pin */
+    GPIO_InitStruct.Pin = BSP_STOP_W_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+
+    HAL_GPIO_Init(BSP_STOP_W_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(BSP_STOP_W_PORT, BSP_STOP_W_PIN, GPIO_PIN_RESET);
 
 
     //Extruder 0 Fan init

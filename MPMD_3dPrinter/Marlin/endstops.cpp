@@ -80,12 +80,12 @@ void Endstops::init() {
     #endif
   #endif
 
-  #if HAS_Z_MIN
-    SET_INPUT(Z_MIN_PIN);
-    #if ENABLED(ENDSTOPPULLUP_ZMIN)
-      WRITE(Z_MIN_PIN,HIGH);
-    #endif
-  #endif
+//  #if HAS_Z_MIN
+//    SET_INPUT(Z_MIN_PIN);
+//    #if ENABLED(ENDSTOPPULLUP_ZMIN)
+//      WRITE(Z_MIN_PIN,HIGH);
+//    #endif
+//  #endif
 
   #if HAS_Z2_MIN
     SET_INPUT(Z2_MIN_PIN);
@@ -128,6 +128,11 @@ void Endstops::init() {
       WRITE(Z_MIN_PROBE_PIN,HIGH);
     #endif
   #endif
+
+#ifdef Z_PROBE_AS_OUTPUT_FUCKERY
+      SET_OUTPUT(Z_MIN_PIN);
+      WRITE(Z_MIN_PIN,LOW);
+#endif
 
 } // Endstops::init
 

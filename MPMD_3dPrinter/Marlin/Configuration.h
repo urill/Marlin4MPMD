@@ -1441,4 +1441,6 @@
   //#define FILAMENT_LCD_DISPLAY
 #endif
 
+#define Z_PROBE_AS_OUTPUT_FUCKERY
+
 #endif // CONFIGURATION_H

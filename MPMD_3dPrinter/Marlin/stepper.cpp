@@ -335,6 +335,16 @@ void Stepper::StepperHandler()
     return;
   }
 
+#ifdef Z_PROBE_AS_OUTPUT_FUCKERY
+  if (planner.movesplanned()) {
+	  BSP_LED_Off(LED_GREEN);
+	  HAL_GPIO_WritePin(BSP_STOP_W_PORT, BSP_STOP_W_PIN, GPIO_PIN_RESET);
+  } else {
+	  BSP_LED_On(LED_GREEN);
+	  HAL_GPIO_WritePin(BSP_STOP_W_PORT, BSP_STOP_W_PIN, GPIO_PIN_SET);
+  }
+#endif
+
   // If there is no current block, attempt to pop one from the buffer
   if (!current_block) {
     // Anything in the buffer?
